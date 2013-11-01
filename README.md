@@ -22,7 +22,7 @@ See the output of `watchcmd -h`:
 	  -directory=".": directory to watch (e.g. --directory src). Defaults to
 	   the current dir
 	  -rules="watchcmd.rules": file containing rules of the form
-	   regexp<TAB>command (default filename is watchcmd.rules)
+	   event<TAB>regexp<TAB>command (default filename is watchcmd.rules)
 	  -batchUpdate=1: to prevent unnecessary runs, if multiple files tend to be
 	   updated in a batch, the typical duration (in milliseconds) to wait for
 	   that batch
@@ -32,29 +32,31 @@ See the output of `watchcmd -h`:
 The rules file contains the patterns to watch (as regular expressions), and the
 commands to execute. An example rule:
 
-	\.js$	grunt browserify
+	MODIFY	\.js$	grunt browserify
 
 The above rule executes `grunt browserify` whenever any file (or set of files)
-with extension `.js` is created, modified, or deleted. Note that if multiple
-files matching the pattern are updated at the same time (see Batch updates
-below), the command will only be run once.
+with extension `.js` is modified. Note that if multiple files matching the
+pattern are updated at the same time (see Batch updates below), the command
+will only be run once.
 
 Regexp substitution is also supported, for example:
 
-	src\/(.+)\.jade$	jade < src/$1.jade > dist/$1.html
+	MODIFY	src\/(.+)\.jade$	jade < src/$1.jade > dist/$1.html
 
 This runs the `jade` executable for each modified `.jade` file under the path
 `src/`, replacing a html file of the same name under the path `dist/`.
 Directory structure is preserved. This rule can be useful when developing
 static sites, for example.
 
-As well as build tasks, long-running foreground processes can also be put in
-the rules file:
+You can also listen for `CREATE` and `DELETE` events, for example:
 
-	build/.+\.js$	node build/app.js
+    CREATE	src/(.+)	mkdir -p dist/`dirname $1`
 
-This will restart the node app `build/app.js` whenever any `.js` file under
-`build/` is changed.
+This will copy directory structures for files created under `src/`.
+
+    REMOVE	src/(.+)	rm dist/$1
+
+This will remove the corresponding file from `dist/` when it is deleted from `src/`.
 
 # Batch updates
 

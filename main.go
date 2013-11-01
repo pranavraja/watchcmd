@@ -12,7 +12,7 @@ var batchUpdateDuration int64
 
 func init() {
 	flag.StringVar(&watchDir, "directory", ".", "directory to watch (e.g. --directory src). Defaults to the current dir")
-	flag.StringVar(&rulesFile, "rules", "watchcmd.rules", "file containing rules of the form regexp<TAB>command (default filename is watchcmd.rules)")
+	flag.StringVar(&rulesFile, "rules", "watchcmd.rules", "file containing rules of the form event<TAB>regexp<TAB>command (default filename is watchcmd.rules)")
 	flag.Int64Var(&batchUpdateDuration, "batchUpdate", 1, "to prevent unnecessary runs, if multiple files tend to be updated in a batch, the typical duration (in milliseconds) to wait for that batch")
 	flag.Parse()
 }
@@ -34,18 +34,14 @@ func main() {
 		}
 		commands := make(map[string]struct{})
 		for _, ev := range events {
-			if ev.IsCreate() {
-				// A create event will be followed by a modify event, so let's not worry for now
-				continue
-			}
 			for _, rule := range rules {
-				if cmd, ok := rule.MatchedCommand(ev.Name); ok {
+				if cmd, ok := rule.MatchedCommand(ev); ok {
+					log.Println(rule.eventName + " " + ev.Name)
 					commands[cmd] = struct{}{}
 					break
 				}
 			}
 		}
-		kill()
 		for cmd, _ := range commands {
 			err := runCommand(cmd)
 			if err != nil {
